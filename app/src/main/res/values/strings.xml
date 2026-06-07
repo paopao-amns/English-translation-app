@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">English Learner</string>
+    <string name="tab_word_lookup">单词查询</string>
+    <string name="tab_sentence_analysis">句子分析</string>
+    <string name="btn_lookup">查询</string>
+    <string name="btn_analyze">分析句子</string>
+    <string name="btn_test_connection">测试连接</string>
+    <string name="btn_save">保存设置</string>
+    <string name="btn_scan">扫描文本</string>
+    <string name="btn_preload">预加载分析</string>
+    <string name="btn_ask">追问</string>
+    <string name="btn_clear">清除对话</string>
+    <string name="hint_word_input">输入英文单词…</string>
+    <string name="hint_sentence_input">输入或粘贴英文句子（最多500字符）…</string>
+    <string name="hint_qa_input">输入你的问题…</string>
+    <string name="hint_endpoint">https://api.openai.com/v1/chat/completions</string>
+    <string name="hint_model">gpt-4o-mini</string>
+    <string name="label_api_endpoint">API 端点 URL</string>
+    <string name="label_api_key">API Key</string>
+    <string name="label_model">模型名称</string>
+    <string name="label_provider">AI 供应商</string>
+    <string name="label_preload_strategy">预加载策略</string>
+    <string name="mode_on_demand">按需查询</string>
+    <string name="mode_preload">预加载</string>
+    <string name="error_no_api_key">请先在设置中配置 API Key</string>
+    <string name="error_network">网络连接失败</string>
+    <string name="error_timeout">请求超时，请重试</string>
+    <string name="error_api_return">API 返回异常</string>
+    <string name="vocabulary_book">生词本</string>
+    <string name="export_csv">导出 CSV</string>
+    <string name="export_anki">导出 Anki</string>
+</resources>

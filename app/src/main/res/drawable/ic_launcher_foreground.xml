@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- E letter on a circle background -->
+    <group android:translateX="24" android:translateY="24">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M30,24 L30,60 L54,60 L54,54 L36,54 L36,43.5 L52.5,43.5 L52.5,37.5 L36,37.5 L36,30 L54,30 L54,24 Z" />
+    </group>
+</vector>
