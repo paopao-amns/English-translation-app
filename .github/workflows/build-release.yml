@@ -31,6 +31,31 @@ jobs:
       - name: Write local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
+      - name: Generate launcher icons
+        run: |
+          python3 -c "
+          import struct, zlib
+          def create_png(width, height, r, g, b):
+              def chunk(ctype, data):
+                  c = ctype + data
+                  return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+              header = b'\\x89PNG\\r\\n\\x1a\\n'
+              ihdr = chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+              raw = b''
+              for y in range(height):
+                  raw += b'\\x00'
+                  for x in range(width):
+                      raw += bytes([r, g, b])
+              idat = chunk(b'IDAT', zlib.compress(raw))
+              iend = chunk(b'IEND', b'')
+              return header + ihdr + idat + iend
+          for d in ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']:
+              import os
+              os.makedirs(f'app/src/main/res/mipmap-{d}', exist_ok=True)
+              with open(f'app/src/main/res/mipmap-{d}/ic_launcher.png', 'wb') as f:
+                  f.write(create_png(48, 48, 26, 115, 232))
+          "
+
       - name: Download Gradle wrapper JAR
         run: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
@@ -68,25 +93,30 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Build release APK
-        run: ./gradlew assembleRelease --stacktrace --info
+      - name: Build debug APK (test)
+        run: ./gradlew assembleDebug --stacktrace
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
-      - name: Upload APK
+      - name: Build release APK
+        run: ./gradlew assembleRelease --stacktrace
+        env:
+          KEYSTORE_PASSWORD: android
+          KEY_ALIAS: release
+          KEY_PASSWORD: android
+
+      - name: Upload debug APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload release APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: app/build/outputs/apk/release/app-release.apk
-
-      - name: Upload build reports (on failure)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-reports
-          path: |
-            app/build/reports/
-            ~/.gradle/daemon/*/daemon-*.log
