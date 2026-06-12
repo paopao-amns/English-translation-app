@@ -92,30 +92,31 @@ jobs:
           restore-keys: |
             gradle-dep-${{ runner.os }}-
 
-      - name: Build release APK
-        run: |
-          ./gradlew assembleRelease -x lint -x test --no-build-cache --rerun-tasks > build-log.txt 2>&1
-          echo "EXIT_CODE=$?" >> build-log.txt
+      - name: Build debug APK (sanity check)
+        run: ./gradlew assembleDebug --no-build-cache --rerun-tasks
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
-      - name: List APK files
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-build-cache
+        env:
+          KEYSTORE_PASSWORD: android
+          KEY_ALIAS: release
+          KEY_PASSWORD: android
+
+      - name: List all APK files
         if: always()
         run: |
-          echo "=== Full workspace APK search ===" | tee -a build-log.txt
-          find . -name "*.apk" -type f 2>/dev/null | tee -a build-log.txt
-          echo "=== build/outputs directory tree ===" | tee -a build-log.txt
-          find app/build/outputs -type f 2>/dev/null | head -50 | tee -a build-log.txt
-          echo "=== sdk.dir ===" | tee -a build-log.txt
-          cat local.properties | tee -a build-log.txt
+          echo "=== APKs found ==="
+          find . -name "*.apk" -type f -ls 2>/dev/null
+          echo "=== outputs tree ==="
+          find app/build/outputs -type f 2>/dev/null | head -50
 
-      - name: Upload all build outputs
+      - name: Upload APKs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-outputs
-          path: |
-            app/build/outputs/
-            build-log.txt
+          name: apks
+          path: "**/*.apk"
