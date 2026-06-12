@@ -82,41 +82,15 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches/modules-*
-            ~/.gradle/wrapper
-          key: gradle-dep-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-dep-${{ runner.os }}-
-
-      - name: Build debug APK (sanity check)
-        run: ./gradlew assembleDebug --no-build-cache --rerun-tasks
-        env:
-          KEYSTORE_PASSWORD: android
-          KEY_ALIAS: release
-          KEY_PASSWORD: android
-
       - name: Build release APK
-        run: ./gradlew assembleRelease --no-build-cache
+        run: ./gradlew assembleRelease
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
-      - name: List all APK files
-        if: always()
-        run: |
-          echo "=== APKs found ==="
-          find . -name "*.apk" -type f -ls 2>/dev/null
-          echo "=== outputs tree ==="
-          find app/build/outputs -type f 2>/dev/null | head -50
-
-      - name: Upload APKs
-        if: always()
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: apks
-          path: "**/*.apk"
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk

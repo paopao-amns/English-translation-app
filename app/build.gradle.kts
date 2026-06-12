@@ -1,6 +1,3 @@
-import java.io.FileInputStream
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -8,31 +5,9 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-// Load signing config from local.properties (not committed to git)
-fun getLocalProperty(key: String): String {
-    val props = Properties()
-    val localFile = rootProject.file("local.properties")
-    if (localFile.exists()) {
-        props.load(FileInputStream(localFile))
-    }
-    return props.getProperty(key) ?: ""
-}
-
 android {
     namespace = "com.paopao.englearn"
     compileSdk = 34
-
-    signingConfigs {
-        val keystoreFile = rootProject.file("release.keystore")
-        if (keystoreFile.exists()) {
-            create("release") {
-                storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: getLocalProperty("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS") ?: getLocalProperty("KEY_ALIAS") ?: "release"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: getLocalProperty("KEY_PASSWORD")
-            }
-        }
-    }
 
     defaultConfig {
         applicationId = "com.paopao.englearn"
@@ -51,11 +26,6 @@ android {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
-            signingConfig = if (signingConfigs.names.contains("release")) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
         }
     }
 
