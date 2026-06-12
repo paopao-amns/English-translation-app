@@ -93,27 +93,26 @@ jobs:
             gradle-${{ runner.os }}-
 
       - name: Build release APK
-        run: ./gradlew assembleRelease --stacktrace 2>&1 | tee build-log.txt
+        run: ./gradlew assembleRelease --stacktrace
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
-      - name: Verify APK exists
+      - name: List output files
+        if: success()
         run: |
-          echo "=== APK files found: ==="
-          find app/build/outputs/apk -name "*.apk" -type f -ls
-          echo "=== Build log size: ==="
-          wc -l build-log.txt
+          echo "=== APK output directory ==="
+          ls -la app/build/outputs/apk/release/ 2>/dev/null || echo "Directory not found"
+          echo "=== Searching all APKs ==="
+          find . -path "./app/build/outputs" -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          echo "=== Files in release dir ==="
+          find app/build/outputs/apk/release -type f 2>/dev/null || echo "No files in release dir"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/apk/release/app-release.apk
-
-      - name: Upload build log
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build-log.txt
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/**/*.apk
