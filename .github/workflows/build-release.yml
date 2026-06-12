@@ -92,43 +92,23 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Build debug APK
-        id: debug_build
-        run: |
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee build-log-debug.txt
-        env:
-          KEYSTORE_PASSWORD: android
-          KEY_ALIAS: release
-          KEY_PASSWORD: android
-
       - name: Build release APK
-        continue-on-error: true
-        run: |
-          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee build-log-release.txt
+        run: ./gradlew assembleRelease --stacktrace 2>&1 | tee build-log.txt
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
-      - name: Upload build logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: |
-            build-log-debug.txt
-            build-log-release.txt
-
-      - name: Upload debug APK
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Upload release APK
+      - name: Upload APK artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/apk/release/app-release.apk
+          path: app/build/outputs/apk/release/*.apk
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build-log.txt
