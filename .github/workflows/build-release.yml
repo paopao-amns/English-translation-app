@@ -99,15 +99,20 @@ jobs:
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
+      - name: Verify APK exists
+        run: |
+          echo "=== APK files found: ==="
+          find app/build/outputs/apk -name "*.apk" -type f -ls
+          echo "=== Build log size: ==="
+          wc -l build-log.txt
+
       - name: Upload APK artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/app-release.apk
 
       - name: Upload build log
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
