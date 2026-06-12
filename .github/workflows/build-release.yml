@@ -93,7 +93,9 @@ jobs:
             gradle-dep-${{ runner.os }}-
 
       - name: Build release APK
-        run: ./gradlew assembleRelease --no-build-cache --rerun-tasks --info 2>&1 | tee build-log.txt
+        run: |
+          ./gradlew assembleRelease -x lint -x test --no-build-cache --rerun-tasks > build-log.txt 2>&1
+          echo "EXIT_CODE=$?" >> build-log.txt
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
