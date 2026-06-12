@@ -82,12 +82,37 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Build debug APK
+        run: |
+          set -o pipefail
+          echo "=== Building debug APK ==="
+          ./gradlew assembleDebug 2>&1 | tee build-log.txt
+          echo "EXIT_CODE=$?"
+
       - name: Build release APK
-        run: ./gradlew assembleRelease 2>&1 | tee build-log.txt
+        run: |
+          set -o pipefail
+          echo "=== Building release APK ==="
+          ./gradlew assembleRelease 2>&1 | tee -a build-log.txt
+          echo "EXIT_CODE=$?"
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
+
+      - name: Diagnose APK output
+        if: always()
+        run: |
+          echo "=== apk directory tree ==="
+          find app/build -name "*.apk" -type f 2>/dev/null || echo "No APK files under app/build"
+          echo "=== workspace-wide APK search ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found anywhere"
+          echo "=== build/outputs full listing ==="
+          ls -la app/build/outputs/ 2>/dev/null || echo "No app/build/outputs/"
+          echo "=== build/outputs/apk listing ==="
+          ls -laR app/build/outputs/apk/ 2>/dev/null || echo "No app/build/outputs/apk/"
+          echo "=== entire build dir (files only) ==="
+          find app/build -type f 2>/dev/null | head -100 || echo "No files under app/build"
 
       - name: Upload build log
         if: always()
@@ -97,12 +122,9 @@ jobs:
           path: build-log.txt
 
       - name: Upload APK
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: |
-            app/build/outputs/**/*.apk
-            app/build/outputs/**/*.aab
-            local.properties
-            build-log.txt
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
