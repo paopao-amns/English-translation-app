@@ -109,16 +109,11 @@ jobs:
           echo "=== sdk.dir ===" | tee -a build-log.txt
           cat local.properties | tee -a build-log.txt
 
-      - name: Upload APK artifact
+      - name: Upload all build outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: app/build/outputs/apk/release/**
-
-      - name: Upload diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build-log.txt
+          name: build-outputs
+          path: |
+            app/build/outputs/
+            build-log.txt
