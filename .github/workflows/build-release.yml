@@ -99,6 +99,16 @@ jobs:
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
+      - name: List APK files
+        if: always()
+        run: |
+          echo "=== Full workspace APK search ===" | tee -a build-log.txt
+          find . -name "*.apk" -type f 2>/dev/null | tee -a build-log.txt
+          echo "=== build/outputs directory tree ===" | tee -a build-log.txt
+          find app/build/outputs -type f 2>/dev/null | head -50 | tee -a build-log.txt
+          echo "=== sdk.dir ===" | tee -a build-log.txt
+          cat local.properties | tee -a build-log.txt
+
       - name: Upload APK artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -106,7 +116,7 @@ jobs:
           name: app-release
           path: app/build/outputs/apk/release/**
 
-      - name: Upload build log
+      - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
