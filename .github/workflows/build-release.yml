@@ -82,30 +82,25 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-v1-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-v1-${{ runner.os }}-
+
       - name: Build release APK
-        run: |
-          set -o pipefail
-          ./gradlew assembleRelease --stacktrace 2>&1 | tee build-log.txt
-          echo "GRADLE_EXIT=$?" >> build-log.txt
+        run: ./gradlew assembleRelease --stacktrace --no-daemon
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
-      - name: List output files
-        if: success()
-        run: |
-          echo "=== APK output directory ==="
-          ls -la app/build/outputs/apk/release/ 2>/dev/null || echo "Directory not found"
-          echo "=== Searching all APKs ==="
-          find . -path "./app/build/outputs" -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
-          echo "=== Files in release dir ==="
-          find app/build/outputs/apk/release -type f 2>/dev/null || echo "No files in release dir"
-
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/release/app-release.apk
