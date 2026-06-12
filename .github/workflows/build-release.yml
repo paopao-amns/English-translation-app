@@ -93,29 +93,31 @@ jobs:
             gradle-${{ runner.os }}-
 
       - name: Build debug APK
-        id: build
-        continue-on-error: true
+        id: debug_build
         run: |
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee build-log.txt
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee build-log-debug.txt
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
       - name: Build release APK
-        if: steps.build.outcome == 'success'
-        run: ./gradlew assembleRelease --stacktrace
+        continue-on-error: true
+        run: |
+          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee build-log-release.txt
         env:
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: release
           KEY_PASSWORD: android
 
-      - name: Upload build log
+      - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
-          path: build-log.txt
+          name: build-logs
+          path: |
+            build-log-debug.txt
+            build-log-release.txt
 
       - name: Upload debug APK
         if: always()
