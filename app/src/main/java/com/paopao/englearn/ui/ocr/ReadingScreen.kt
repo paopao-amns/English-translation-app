@@ -33,7 +33,14 @@ fun ReadingScreen(
     val wordLookupVM: WordLookupViewModel = viewModel()
     val wordUiState by wordLookupVM.uiState.collectAsState()
     val context = LocalContext.current
-    val ttsManager = remember { TtsManager(context) }
+    val appContext = context.applicationContext
+    val ttsManager = remember { TtsManager(appContext) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            ttsManager.shutdown()
+        }
+    }
 
     var showWordSheet by remember { mutableStateOf(false) }
     var tappedWord by remember { mutableStateOf("") }

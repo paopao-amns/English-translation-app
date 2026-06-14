@@ -41,14 +41,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update {
             it.copy(sessionId = sessionId, sentenceText = sentenceText, analysisJson = analysisJson)
         }
-        loadMessages()
+        viewModelScope.launch { loadMessages() }
     }
 
-    private fun loadMessages() {
-        viewModelScope.launch {
-            val messages = chatRepository.getMessages(_uiState.value.sessionId)
-            _uiState.update { it.copy(messages = messages) }
-        }
+    private suspend fun loadMessages() {
+        val messages = chatRepository.getMessages(_uiState.value.sessionId)
+        _uiState.update { it.copy(messages = messages) }
     }
 
     fun updateInput(text: String) {
@@ -70,7 +68,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 question = question
             )) {
                 is Result.Success -> {
-                    loadMessages()  // Reload all messages
+                    loadMessages()  // Reload all messages (suspend, awaited)
                     _uiState.update { it.copy(isLoading = false) }
                 }
                 is Result.Error -> {

@@ -13,6 +13,9 @@ interface VocabBookDao {
     @Query("SELECT * FROM vocab_book ORDER BY saved_at DESC")
     fun getAll(): Flow<List<VocabBookEntity>>
 
+    @Query("SELECT * FROM vocab_book ORDER BY saved_at DESC")
+    suspend fun getAllSuspend(): List<VocabBookEntity>
+
     @Query("SELECT * FROM vocab_book WHERE word = :word LIMIT 1")
     suspend fun getByWord(word: String): VocabBookEntity?
 

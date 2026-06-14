@@ -5,6 +5,8 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.paopao.englearn.util.Result
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Repository for OCR text recognition using Google ML Kit.
@@ -14,13 +16,13 @@ class OcrRepository {
 
     /**
      * Recognize text from a bitmap image.
+     * Runs on IO dispatcher to avoid blocking main thread.
      */
-    suspend fun recognizeText(bitmap: Bitmap): Result<String> {
-        return try {
-            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    suspend fun recognizeText(bitmap: Bitmap): Result<String> = withContext(Dispatchers.IO) {
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        try {
             val inputImage = InputImage.fromBitmap(bitmap, 0)
-            val visionResult = recognizer.process(inputImage)
-            recognizer.close()
+            val visionResult = com.google.android.gms.tasks.Tasks.await(recognizer.process(inputImage))
 
             val text = visionResult.text
             if (text.isNotBlank()) {
@@ -34,6 +36,8 @@ class OcrRepository {
             } else {
                 Result.error("文字识别失败：${e.localizedMessage ?: "未知错误"}")
             }
+        } finally {
+            recognizer.close()
         }
     }
 

@@ -50,7 +50,7 @@ goto fail
 :execute
 @rem Setup the command line
 
-set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
+set DEFAULT_JVM_OPTS=-Xmx64m -Xms64m
 
 set GRADLE_OPTS=%GRADLE_OPTS% -Dorg.gradle.appname=%APP_BASE_NAME%
 

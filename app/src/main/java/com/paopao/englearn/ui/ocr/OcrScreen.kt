@@ -7,10 +7,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -18,15 +15,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.canhub.cropper.CropImageContract
+import com.canhub.cropper.CropImageContractOptions
+import com.canhub.cropper.CropImageOptions
 import com.paopao.englearn.ui.components.LoadingOverlay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +58,6 @@ fun OcrScreen(
 
     // Camera capture
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var photoUri by remember { mutableStateOf<Uri?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
@@ -68,22 +68,74 @@ fun OcrScreen(
         }
     }
 
-    // Gallery picker
+    // ── Gallery → copy to local → crop ──────────────────
+    // Two-step flow to avoid URI permission issues on some devices (e.g. MuMu):
+    //  1. GetContent() returns a content:// URI only readable by our activity
+    //  2. Copy it to a local cache file on IO thread → generate our own FileProvider URI
+    //  3. Pass the local URI to CropImageContract — always readable
+    var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
+
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let {
+    ) { uri -> pendingImageUri = uri }
+
+    val cropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
+        if (result.isSuccessful) {
             try {
-                val inputStream = context.contentResolver.openInputStream(it)
-                val bitmap = BitmapFactory.decodeStream(inputStream)
-                inputStream?.close()
-                bitmap?.let { bmp ->
-                    capturedBitmap = bmp
-                    viewModel.processImage(bmp)
+                result.uriContent?.let { croppedUri ->
+                    val inputStream = context.contentResolver.openInputStream(croppedUri)
+                    inputStream?.use { stream ->
+                        val bitmap = BitmapFactory.decodeStream(stream)
+                        bitmap?.let { bmp ->
+                            capturedBitmap = bmp
+                            viewModel.processImage(bmp)
+                        }
+                    }
                 }
             } catch (e: Exception) {
-                viewModel.updateEditableText("")  // trigger error state
+                viewModel.updateEditableText("")
             }
+        }
+    }
+
+    // Copy selected image to local cache on IO dispatcher, then launch cropper.
+    // Doing the copy here (coroutine) rather than in the gallery callback avoids
+    // blocking the main thread with file I/O.
+    LaunchedEffect(pendingImageUri) {
+        pendingImageUri?.let { selectedUri ->
+            val localUri = withContext(Dispatchers.IO) {
+                try {
+                    val contentType = context.contentResolver.getType(selectedUri)
+                    val ext = when {
+                        contentType?.contains("png") == true -> ".png"
+                        contentType?.contains("webp") == true -> ".webp"
+                        else -> ".jpg"
+                    }
+                    val tempFile = File(context.cacheDir, "crop_input_${UUID.randomUUID()}${ext}")
+                    context.contentResolver.openInputStream(selectedUri)?.use { input ->
+                        tempFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        tempFile
+                    )
+                } catch (_: Exception) {
+                    selectedUri // fallback: try original URI if copy fails
+                }
+            }
+
+            cropLauncher.launch(
+                CropImageContractOptions(
+                    localUri,
+                    CropImageOptions(
+                        fixAspectRatio = false,
+                        imageSourceIncludeCamera = false,
+                        imageSourceIncludeGallery = false
+                    )
+                )
+            )
+            pendingImageUri = null
         }
     }
 

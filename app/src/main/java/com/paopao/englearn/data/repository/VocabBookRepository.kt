@@ -48,21 +48,23 @@ class VocabBookRepository(private val dao: VocabBookDao) {
      * Export vocabulary to CSV and share.
      */
     suspend fun exportCsv(context: Context): File {
-        val words = dao.getAll() // This is a Flow, need suspend version
+        val words = dao.getAllSuspend()
 
         val file = File(context.cacheDir, "vocabulary_${System.currentTimeMillis()}.csv")
-        file.bufferedWriter().use { writer ->
-            writer.write("Word,POS,Meaning,Example,Example CN\n")
-            // Use BOM for Excel Chinese support
-            file.writeText("﻿")
-            file.appendText("Word,Part of Speech,Meaning,Example,Example (Chinese)\n")
-            // Actual data will be written differently
-        }
-
-        // Rewrite properly
         val csv = buildString {
-            append("﻿")  // BOM for Excel
+            append("﻿")  // BOM for Excel Chinese support
             appendLine("Word,Part of Speech,Meaning,Example,Example (Chinese)")
+            words.forEach { word ->
+                appendLine(
+                    listOf(
+                        word.word,
+                        word.pos ?: "",
+                        word.meaning ?: "",
+                        word.example ?: "",
+                        word.exampleCn ?: ""
+                    ).joinToString(",") { "\"${it.replace("\"", "\"\"")}\"" }
+                )
+            }
         }
         file.writeText(csv)
         return file
@@ -73,10 +75,22 @@ class VocabBookRepository(private val dao: VocabBookDao) {
      * Format: Front,Back (word on front, meaning+example on back)
      */
     suspend fun exportAnki(context: Context): File {
+        val words = dao.getAllSuspend()
+
         val file = File(context.cacheDir, "anki_vocabulary_${System.currentTimeMillis()}.csv")
         val csv = buildString {
             append("﻿")
             appendLine("Front,Back")
+            words.forEach { word ->
+                val front = word.word
+                val back = buildString {
+                    if (!word.pos.isNullOrBlank()) appendLine("【词性】${word.pos}")
+                    if (!word.meaning.isNullOrBlank()) appendLine("【释义】${word.meaning}")
+                    if (!word.example.isNullOrBlank()) appendLine("【例句】${word.example}")
+                    if (!word.exampleCn.isNullOrBlank()) append("【翻译】${word.exampleCn}")
+                }
+                appendLine("\"${front.replace("\"", "\"\"")}\",\"${back.replace("\"", "\"\"")}\"")
+            }
         }
         file.writeText(csv)
         return file

@@ -57,7 +57,7 @@ class ReadingViewModel(application: Application) : AndroidViewModel(application)
     fun startPreload(text: String) {
         preloadJob?.cancel()
 
-        viewModelScope.launch {
+        preloadJob = viewModelScope.launch {
             val settings = settingsDataStore.settingsFlow.first()
             val strategy = settings.preloadStrategy
             val articleId = _uiState.value.articleId

@@ -55,11 +55,10 @@ class PreloadRepository(
                 PreloadStrategy.BATCH -> preloadBatch(text, articleId, onProgress)
                 PreloadStrategy.HYBRID -> preloadHybrid(text, articleId, onProgress)
             }
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            Result.error("预加载已取消")
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             Result.error("预加载超时")
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Result.error("预加载失败：${e.message}")
         }
     }

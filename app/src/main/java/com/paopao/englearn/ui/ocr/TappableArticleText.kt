@@ -25,7 +25,9 @@ fun TappableArticleText(
 ) {
     val wordTokens = remember(text) { TextTokenizer.tokenizeWords(text) }
 
-    val annotatedString = remember(text, highlightedWords) {
+    val highlightColor = MaterialTheme.colorScheme.tertiary
+
+    val annotatedString = remember(text, highlightedWords, highlightColor) {
         buildAnnotatedString {
             append(text)
 
@@ -43,7 +45,7 @@ fun TappableArticleText(
                         style = SpanStyle(
                             fontWeight = FontWeight.Bold,
                             textDecoration = TextDecoration.Underline,
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = highlightColor
                         ),
                         start = token.start,
                         end = token.end

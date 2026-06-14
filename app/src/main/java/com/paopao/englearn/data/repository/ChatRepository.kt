@@ -59,8 +59,8 @@ class ChatRepository(
             val request = ChatCompletionRequest(
                 model = settings.modelName,
                 messages = listOf(
-                    ChatMessage(role = "system", content = PromptTemplates.QA_SYSTEM),
-                    ChatMessage(role = "user", content = contextBuilder.toString())
+                    com.paopao.englearn.data.remote.ChatMessage(role = "system", content = PromptTemplates.QA_SYSTEM),
+                    com.paopao.englearn.data.remote.ChatMessage(role = "user", content = contextBuilder.toString())
                 ),
                 temperature = 0.5   // Slightly higher for more natural answers
             )

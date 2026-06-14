@@ -53,8 +53,8 @@ class SentenceRepository(
             val request = ChatCompletionRequest(
                 model = settings.modelName,
                 messages = listOf(
-                    ChatMessage(role = "system", content = PromptTemplates.SENTENCE_ANALYSIS_SYSTEM),
-                    ChatMessage(role = "user", content = "分析句子：$limited")
+                    com.paopao.englearn.data.remote.ChatMessage(role = "system", content = PromptTemplates.SENTENCE_ANALYSIS_SYSTEM),
+                    com.paopao.englearn.data.remote.ChatMessage(role = "user", content = "分析句子：$limited")
                 ),
                 temperature = 0.3
             )
@@ -69,16 +69,21 @@ class SentenceRepository(
 
                 val json = extractJson(content)
 
-                // 3. Save to Room cache
-                sentenceCacheDao?.insert(
-                    SentenceCacheEntity(
-                        sentenceHash = hash,
-                        sentenceText = limited,
-                        analysisJson = json
-                    )
-                )
+                // 3. Validate JSON before caching
+                val analysisResult = parseAnalysisJson(json)
 
-                parseAnalysisJson(json)
+                // 4. Only save to Room if parsing succeeded
+                if (analysisResult is Result.Success) {
+                    sentenceCacheDao?.insert(
+                        SentenceCacheEntity(
+                            sentenceHash = hash,
+                            sentenceText = limited,
+                            analysisJson = json
+                        )
+                    )
+                }
+
+                analysisResult
             } else {
                 Result.error("请求失败 (${response.code()})")
             }

@@ -88,3 +88,5 @@ Thumbs.db
 *.tmp
 *.swp
 *.log
+gradle-8.5-bin.zip
+gradle/wrapper/gradle-wrapper.jar

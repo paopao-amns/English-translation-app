@@ -107,27 +107,32 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun saveSettings() {
         viewModelScope.launch {
-            val state = _uiState.value
-            settingsDataStore.saveAll(
-                SettingsDataStore.AppSettings(
-                    apiEndpoint = state.endpoint,
-                    apiKey = state.apiKey,
-                    modelName = state.modelName,
-                    provider = state.provider,
-                    preloadStrategy = state.preloadStrategy,
-                    darkMode = state.darkMode
-                )
-            )
-            _uiState.update { it.copy(isSaved = true) }
+            saveSettingsAsync().join()
         }
+    }
+
+    private fun saveSettingsAsync() = viewModelScope.launch {
+        val state = _uiState.value
+        settingsDataStore.saveAll(
+            SettingsDataStore.AppSettings(
+                apiEndpoint = state.endpoint,
+                apiKey = state.apiKey,
+                modelName = state.modelName,
+                provider = state.provider,
+                preloadStrategy = state.preloadStrategy,
+                darkMode = state.darkMode
+            )
+        )
+        _uiState.update { it.copy(isSaved = true) }
     }
 
     fun testConnection() {
         viewModelScope.launch {
             _uiState.update { it.copy(isTesting = true, testResult = null) }
 
-            // Save first, then test
-            saveSettings()
+            // Save first and await completion, then test
+            val saved = saveSettingsAsync()
+            saved.join()
 
             try {
                 val (apiService, apiConfig) = NetworkModule.createApiService(settingsDataStore)

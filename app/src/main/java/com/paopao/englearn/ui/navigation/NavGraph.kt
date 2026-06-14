@@ -16,6 +16,7 @@ import com.paopao.englearn.ui.analysis.SentenceAnalysisScreen
 import com.paopao.englearn.ui.chat.ChatScreen
 import com.paopao.englearn.ui.home.HomeScreen
 import com.paopao.englearn.ui.ocr.OcrScreen
+import com.paopao.englearn.ui.ocr.ReadingScreen
 import com.paopao.englearn.ui.settings.SettingsScreen
 import com.paopao.englearn.ui.settings.VocabularyScreen
 import java.net.URLDecoder
