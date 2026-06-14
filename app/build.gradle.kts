@@ -55,6 +55,33 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Rename APK output: EnglishLearner-v1.0.0-debug.apk
+    val versionName = defaultConfig.versionName  // capture at config time
+    afterEvaluate {
+        tasks.named("packageDebug") {
+            doLast {
+                val apkDir = layout.buildDirectory.dir("outputs/apk/debug").get().asFile
+                val orig = File(apkDir, "app-debug.apk")
+                val dest = File(apkDir, "EnglishLearner-v${versionName}-debug.apk")
+                if (orig.exists()) {
+                    orig.renameTo(dest)
+                    logger.lifecycle("APK: ${dest.name}")
+                }
+            }
+        }
+        tasks.named("packageRelease") {
+            doLast {
+                val apkDir = layout.buildDirectory.dir("outputs/apk/release").get().asFile
+                val orig = File(apkDir, "app-release.apk")
+                val dest = File(apkDir, "EnglishLearner-v${versionName}-release.apk")
+                if (orig.exists()) {
+                    orig.renameTo(dest)
+                    logger.lifecycle("APK: ${dest.name}")
+                }
+            }
+        }
+    }
 }
 
 dependencies {
