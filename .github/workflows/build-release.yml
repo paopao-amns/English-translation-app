@@ -55,30 +55,13 @@ jobs:
                   f.write(create_png(48, 48, 26, 115, 232))
           "
 
-      - name: Download Gradle wrapper JAR
+      - name: Verify Gradle wrapper JAR
         run: |
-          WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
-          if [ ! -f "$WRAPPER_JAR" ]; then
-            GRADLE_VER="8.14"
-            echo "Downloading Gradle wrapper JAR for $GRADLE_VER..."
-            ZIP="gradle-${GRADLE_VER}-bin.zip"
-            curl -sSLO "https://services.gradle.org/distributions/$ZIP"
-            unzip -oq "$ZIP" "gradle-${GRADLE_VER}/lib/gradle-wrapper-*" 2>/dev/null
-            mv gradle-${GRADLE_VER}/lib/gradle-wrapper-*.jar "$WRAPPER_JAR" 2>/dev/null || {
-              # Fallback: wrapper jar might not be in -bin; try to extract from lib/
-              echo "Trying alternate extraction..."
-              unzip -oq "$ZIP" "gradle-${GRADLE_VER}/lib/*.jar" 2>/dev/null
-              mv gradle-${GRADLE_VER}/lib/gradle-wrapper-*.jar "$WRAPPER_JAR" 2>/dev/null
-            }
-            rm -rf "gradle-${GRADLE_VER}" "$ZIP"
-            if [ -f "$WRAPPER_JAR" ]; then
-              echo "Gradle wrapper JAR ready ($(stat -c%s "$WRAPPER_JAR") bytes)."
-            else
-              echo "ERROR: Failed to extract wrapper JAR."
-              exit 1
-            fi
+          if [ -f gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "Gradle wrapper JAR found ($(stat -c%s gradle/wrapper/gradle-wrapper.jar) bytes)."
           else
-            echo "Gradle wrapper JAR already present."
+            echo "ERROR: gradle-wrapper.jar is missing. It should be committed to the repo."
+            exit 1
           fi
 
       - name: Generate release keystore
