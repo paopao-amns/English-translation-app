@@ -81,6 +81,10 @@ class OcrViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(editableText = text) }
     }
 
+    fun setError(message: String) {
+        _uiState.update { it.copy(error = message) }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }

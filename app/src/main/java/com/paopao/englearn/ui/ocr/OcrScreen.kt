@@ -99,8 +99,8 @@ fun OcrScreen(
     }
 
     // Copy selected image to local cache on IO dispatcher, then launch cropper.
-    // Doing the copy here (coroutine) rather than in the gallery callback avoids
-    // blocking the main thread with file I/O.
+    // We MUST copy to a local file because the content:// URI from GetContent()
+    // grants only temporary read permission — the crop activity can't read it.
     LaunchedEffect(pendingImageUri) {
         pendingImageUri?.let { selectedUri ->
             val localUri = withContext(Dispatchers.IO) {
@@ -112,29 +112,39 @@ fun OcrScreen(
                         else -> ".jpg"
                     }
                     val tempFile = File(context.cacheDir, "crop_input_${UUID.randomUUID()}${ext}")
-                    context.contentResolver.openInputStream(selectedUri)?.use { input ->
+                    val copied = context.contentResolver.openInputStream(selectedUri)?.use { input ->
                         tempFile.outputStream().use { output -> input.copyTo(output) }
+                        true
+                    } ?: false
+
+                    if (copied && tempFile.length() > 0) {
+                        FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            tempFile
+                        )
+                    } else {
+                        null
                     }
-                    FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        tempFile
-                    )
                 } catch (_: Exception) {
-                    selectedUri // fallback: try original URI if copy fails
+                    null
                 }
             }
 
-            cropLauncher.launch(
-                CropImageContractOptions(
-                    localUri,
-                    CropImageOptions(
-                        fixAspectRatio = false,
-                        imageSourceIncludeCamera = false,
-                        imageSourceIncludeGallery = false
+            if (localUri != null) {
+                cropLauncher.launch(
+                    CropImageContractOptions(
+                        localUri,
+                        CropImageOptions(
+                            fixAspectRatio = false,
+                            imageSourceIncludeCamera = false,
+                            imageSourceIncludeGallery = false
+                        )
                     )
                 )
-            )
+            } else {
+                viewModel.setError("无法读取图片，请重试")
+            }
             pendingImageUri = null
         }
     }

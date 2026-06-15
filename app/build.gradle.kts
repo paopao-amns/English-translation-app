@@ -143,7 +143,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     // Image Cropper
-    implementation("com.vanniktech:android-image-cropper:4.5.0")
+    implementation("com.vanniktech:android-image-cropper:4.7.0")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
