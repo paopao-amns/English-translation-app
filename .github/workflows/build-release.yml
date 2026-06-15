@@ -57,13 +57,28 @@ jobs:
 
       - name: Download Gradle wrapper JAR
         run: |
-          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            echo "Downloading Gradle 8.5..."
-            curl -sSLO "https://services.gradle.org/distributions/gradle-8.5-bin.zip"
-            unzip -q gradle-8.5-bin.zip "gradle-8.5/lib/gradle-wrapper-*"
-            mv gradle-8.5/lib/gradle-wrapper-*.jar gradle/wrapper/gradle-wrapper.jar
-            rm -rf gradle-8.5 gradle-8.5-bin.zip
-            echo "Gradle wrapper JAR ready."
+          WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
+          if [ ! -f "$WRAPPER_JAR" ]; then
+            GRADLE_VER="8.14"
+            echo "Downloading Gradle wrapper JAR for $GRADLE_VER..."
+            ZIP="gradle-${GRADLE_VER}-bin.zip"
+            curl -sSLO "https://services.gradle.org/distributions/$ZIP"
+            unzip -oq "$ZIP" "gradle-${GRADLE_VER}/lib/gradle-wrapper-*" 2>/dev/null
+            mv gradle-${GRADLE_VER}/lib/gradle-wrapper-*.jar "$WRAPPER_JAR" 2>/dev/null || {
+              # Fallback: wrapper jar might not be in -bin; try to extract from lib/
+              echo "Trying alternate extraction..."
+              unzip -oq "$ZIP" "gradle-${GRADLE_VER}/lib/*.jar" 2>/dev/null
+              mv gradle-${GRADLE_VER}/lib/gradle-wrapper-*.jar "$WRAPPER_JAR" 2>/dev/null
+            }
+            rm -rf "gradle-${GRADLE_VER}" "$ZIP"
+            if [ -f "$WRAPPER_JAR" ]; then
+              echo "Gradle wrapper JAR ready ($(stat -c%s "$WRAPPER_JAR") bytes)."
+            else
+              echo "ERROR: Failed to extract wrapper JAR."
+              exit 1
+            fi
+          else
+            echo "Gradle wrapper JAR already present."
           fi
 
       - name: Generate release keystore
@@ -128,3 +143,4 @@ jobs:
           path: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
