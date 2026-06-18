@@ -1,6 +1,7 @@
 package com.paopao.englearn.ui.ocr
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -20,9 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.canhub.cropper.CropImageContract
-import com.canhub.cropper.CropImageContractOptions
-import com.canhub.cropper.CropImageOptions
 import com.paopao.englearn.ui.components.LoadingOverlay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,10 +77,12 @@ fun OcrScreen(
         ActivityResultContracts.GetContent()
     ) { uri -> pendingImageUri = uri }
 
-    val cropLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
-        if (result.isSuccessful) {
+    val cropLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
             try {
-                result.uriContent?.let { croppedUri ->
+                result.data?.getParcelableExtra<Uri>(CropActivity.EXTRA_RESULT_URI)?.let { croppedUri ->
                     val inputStream = context.contentResolver.openInputStream(croppedUri)
                     inputStream?.use { stream ->
                         val bitmap = BitmapFactory.decodeStream(stream)
@@ -132,16 +132,10 @@ fun OcrScreen(
             }
 
             if (localUri != null) {
-                cropLauncher.launch(
-                    CropImageContractOptions(
-                        localUri,
-                        CropImageOptions(
-                            fixAspectRatio = false,
-                            imageSourceIncludeCamera = false,
-                            imageSourceIncludeGallery = false
-                        )
-                    )
-                )
+                val intent = Intent(context, CropActivity::class.java).apply {
+                    putExtra(CropActivity.EXTRA_SOURCE_URI, localUri)
+                }
+                cropLauncher.launch(intent)
             } else {
                 viewModel.setError("无法读取图片，请重试")
             }
