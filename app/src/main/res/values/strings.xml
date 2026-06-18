@@ -30,4 +30,6 @@
     <string name="vocabulary_book">生词本</string>
     <string name="export_csv">导出 CSV</string>
     <string name="export_anki">导出 Anki</string>
+    <string name="crop_confirm">裁剪</string>
+    <string name="error_image_load">无法加载图片</string>
 </resources>

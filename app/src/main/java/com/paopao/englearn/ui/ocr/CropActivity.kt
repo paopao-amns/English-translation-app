@@ -2,9 +2,12 @@ package com.paopao.englearn.ui.ocr
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.FileProvider
 import com.canhub.cropper.CropImageView
 import com.paopao.englearn.R
 import java.io.File
@@ -27,9 +30,19 @@ class CropActivity : ComponentActivity() {
         cropImageView = findViewById(R.id.cropImageView)
         cropImageView.setFixedAspectRatio(false)
 
-        val sourceUri = intent.getParcelableExtra(EXTRA_SOURCE_URI, Uri::class.java)
+        @Suppress("DEPRECATION")
+        val sourceUri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(EXTRA_SOURCE_URI, Uri::class.java)
+        } else {
+            intent.getParcelableExtra(EXTRA_SOURCE_URI)
+        }
+
         if (sourceUri != null) {
             cropImageView.setImageUriAsync(sourceUri)
+        } else {
+            Toast.makeText(this, R.string.error_image_load, Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
 
         cropImageView.setOnCropImageCompleteListener { _, cropResult ->
@@ -39,7 +52,11 @@ class CropActivity : ComponentActivity() {
                 FileOutputStream(outFile).use { fos ->
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos)
                 }
-                val resultUri = Uri.fromFile(outFile)
+                val resultUri = FileProvider.getUriForFile(
+                    this,
+                    "${packageName}.fileprovider",
+                    outFile
+                )
                 intent.putExtra(EXTRA_RESULT_URI, resultUri)
                 setResult(RESULT_OK, intent)
             }
