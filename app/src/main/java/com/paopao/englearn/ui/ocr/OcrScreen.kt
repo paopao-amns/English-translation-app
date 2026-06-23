@@ -72,6 +72,9 @@ fun OcrScreen(
     //  2. Copy it to a local cache file on IO thread → generate our own FileProvider URI
     //  3. Pass the local URI to CropImageContract — always readable
     var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
+    // Local copy of the source image handed to CropActivity. We own its lifecycle
+    // and must delete it once the crop activity returns (success or cancel).
+    var pendingInputFile by remember { mutableStateOf<File?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -80,20 +83,28 @@ fun OcrScreen(
     val cropLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        // The input temp file is no longer needed once cropping is done.
+        pendingInputFile?.let { it.delete() }
+        pendingInputFile = null
+
         if (result.resultCode == android.app.Activity.RESULT_OK) {
+            var outFile: File? = null
             try {
-                result.data?.getParcelableExtra<Uri>(CropActivity.EXTRA_RESULT_URI)?.let { croppedUri ->
-                    val inputStream = context.contentResolver.openInputStream(croppedUri)
-                    inputStream?.use { stream ->
-                        val bitmap = BitmapFactory.decodeStream(stream)
-                        bitmap?.let { bmp ->
+                val path = result.data?.getStringExtra(CropActivity.EXTRA_RESULT_PATH)
+                if (path != null) {
+                    outFile = File(path)
+                    outFile.inputStream().use { stream ->
+                        BitmapFactory.decodeStream(stream)?.let { bmp ->
                             capturedBitmap = bmp
                             viewModel.processImage(bmp)
                         }
                     }
                 }
             } catch (e: Exception) {
-                viewModel.updateEditableText("")
+                viewModel.setError("裁剪失败，请重试")
+            } finally {
+                // Output temp file is fully decoded into memory; clean it up.
+                outFile?.delete()
             }
         }
     }
@@ -103,6 +114,8 @@ fun OcrScreen(
     // grants only temporary read permission — the crop activity can't read it.
     LaunchedEffect(pendingImageUri) {
         pendingImageUri?.let { selectedUri ->
+            // Holder for the input temp file so we can delete it after cropping.
+            var tempFile: File? = null
             val localUri = withContext(Dispatchers.IO) {
                 try {
                     val contentType = context.contentResolver.getType(selectedUri)
@@ -111,17 +124,18 @@ fun OcrScreen(
                         contentType?.contains("webp") == true -> ".webp"
                         else -> ".jpg"
                     }
-                    val tempFile = File(context.cacheDir, "crop_input_${UUID.randomUUID()}${ext}")
+                    val file = File(context.cacheDir, "crop_input_${UUID.randomUUID()}${ext}")
                     val copied = context.contentResolver.openInputStream(selectedUri)?.use { input ->
-                        tempFile.outputStream().use { output -> input.copyTo(output) }
+                        file.outputStream().use { output -> input.copyTo(output) }
                         true
                     } ?: false
 
-                    if (copied && tempFile.length() > 0) {
+                    if (copied && file.length() > 0) {
+                        tempFile = file
                         FileProvider.getUriForFile(
                             context,
                             "${context.packageName}.fileprovider",
-                            tempFile
+                            file
                         )
                     } else {
                         null
@@ -132,6 +146,9 @@ fun OcrScreen(
             }
 
             if (localUri != null) {
+                // Remember the input file so we can delete it when the crop
+                // activity returns (see cropLauncher callback above).
+                pendingInputFile = tempFile
                 val intent = Intent(context, CropActivity::class.java).apply {
                     putExtra(CropActivity.EXTRA_SOURCE_URI, localUri)
                 }
@@ -312,8 +329,14 @@ private fun ResultContent(
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedButton(onClick = onRetry) {
-                        Text("重试")
+                    Row {
+                        OutlinedButton(onClick = onRetry) {
+                            Text("重试")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = onClearError) {
+                            Text("忽略")
+                        }
                     }
                 }
             }

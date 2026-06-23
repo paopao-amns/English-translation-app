@@ -89,3 +89,7 @@ Thumbs.db
 *.swp
 *.log
 gradle-8.5-bin.zip
+gradle-8.14-bin.zip
+gradle-8.14-tmp/
+app-release.zip
+ci-log.zip
